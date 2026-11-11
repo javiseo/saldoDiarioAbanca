@@ -1,18 +1,32 @@
 name: Saldo diario
 on:
   schedule:
-    - cron: "0 6 * * *"
+    # Horas UTC de verano (6,13,16,20) e invierno (7,14,17,21)
+    - cron: "7 6,7,13,14,16,17,20,21 * * *"
   workflow_dispatch:
 jobs:
   saldo:
     runs-on: ubuntu-latest
     steps:
+      - name: ¿Toca ahora? (hora de Madrid)
+        id: hora
+        run: |
+          H=$(TZ=Europe/Madrid date +%H)
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] || [[ " 08 15 18 22 " == *" $H "* ]]; then
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "En Madrid son las $H h: no toca, termino."
+          fi
       - uses: actions/checkout@v4
+        if: steps.hora.outputs.ok == 'true'
       - uses: actions/setup-python@v5
+        if: steps.hora.outputs.ok == 'true'
         with:
           python-version: "3.12"
       - run: pip install -r requirements.txt
+        if: steps.hora.outputs.ok == 'true'
       - run: python saldo_diario.py
+        if: steps.hora.outputs.ok == 'true'
         env:
           ENABLE_APP_ID: ${{ secrets.ENABLE_APP_ID }}
           ENABLE_PRIVATE_KEY: ${{ secrets.ENABLE_PRIVATE_KEY }}
