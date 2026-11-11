@@ -11,6 +11,9 @@ TG_TOKEN = os.environ["TELEGRAM_BOT_TOKEN"]
 TG_CHAT = os.environ["TELEGRAM_CHAT_ID"]
 SESSION_ID = os.environ["ENABLE_SESSION_ID"]
 DEBUG = "--debug" in sys.argv
+# Alias por cuenta: "1234=Nómina,5678=Ahorro" (últimos 4 dígitos del IBAN)
+ALIAS = {k.strip(): v.strip() for k, v in
+(p.split("=", 1) for p in os.getenv("CUENTAS_ALIAS", "").split(",") if "=" in p)}
 AVISO_DIAS = 7
 # Preferencia de tipo de saldo (ISO 20022): disponible > contable
 PREFERENCIA = ["ITAV", "CLAV", "XPCD", "ITBD", "CLBD", "OPAV", "OPBD"]
@@ -50,8 +53,8 @@ def main():
             d = eb.detalles_cuenta(uid)
         except Exception:
             d = {}
-        nombre = d.get("name") or d.get("product") or "Cuenta"
         iban = (d.get("account_id") or {}).get("iban") or ""
+        nombre = ALIAS.get(iban[-4:]) or d.get("name") or d.get("product") or "Cuenta"
         lista = eb.saldos(uid)
         if DEBUG:
             print(json.dumps(lista, indent=2, ensure_ascii=False))
